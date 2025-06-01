@@ -136,28 +136,26 @@ exports.updateAnnouncement = async (req, res) => {
 exports.deleteAnnouncement = async (req, res) => {
   try {
     const announcement = await Announcement.findById(req.params.id);
-    if (!announcement) {
-      return res.status(404).json({ msg: "Announcement not found" });
-    } // Check if user is authorized to delete
-    const user = await User.findById(req.user.id);
+    if (!announcement) return res.status(404).json({ msg: "Not found" });
+    // Only superadmin can delete archived announcements
+    if (announcement.isArchived && req.user.role !== "superadmin") {
+      return res.status(403).json({
+        msg: "Only superadmin can delete archived announcements",
+      });
+    }
+    // Only superadmin, author, or admin of department can delete non-archived
     if (
-      user.role !== "superadmin" &&
+      req.user.role !== "superadmin" &&
       announcement.authorId.toString() !== req.user.id &&
-      (user.department !== announcement.department || user.role !== "admin")
+      (req.user.department !== announcement.department ||
+        req.user.role !== "admin")
     ) {
-      return res
-        .status(403)
-        .json({ msg: "Not authorized to delete this announcement" });
+      return res.status(403).json({ msg: "Not authorized" });
     }
-
-    await Announcement.deleteOne({ _id: req.params.id });
-    res.json({ msg: "Announcement removed" });
-  } catch (error) {
-    console.error(error.message);
-    if (error.kind === "ObjectId") {
-      return res.status(404).json({ msg: "Announcement not found" });
-    }
-    res.status(500).send("Server Error");
+    await announcement.deleteOne();
+    res.json({ msg: "Announcement deleted" });
+  } catch (err) {
+    res.status(500).json({ msg: "Server error" });
   }
 };
 

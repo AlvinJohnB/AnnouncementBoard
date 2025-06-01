@@ -19,6 +19,8 @@ app.use(express.json({ extended: false }));
 app.use(bodyParser.json());
 
 // Define Routes
+app.use("/api/endorsements", require("./routes/api/endorsements"));
+app.use("/api/endorsements", require("./routes/api/endorsementComments"));
 app.use("/api/announcements", require("./routes/api/announcements"));
 app.use("/api/users", require("./routes/api/users"));
 
